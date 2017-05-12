@@ -1,8 +1,13 @@
+import net.coobird.thumbnailator.Thumbnailator;
+import net.coobird.thumbnailator.Thumbnails;
+
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -11,139 +16,128 @@ import java.io.IOException;
  * Created by nishu on 5/9/2017.
  */
 public class Tank {
-    private final double G = -9.81;
+    private boolean fired = false;
+    private int prevTurretPt = 1;
+    private final double G = -98.1;
     private Graphics g;
+    private Graphics2D g2;
     private DrawingPanel panel;
     private int xPos;
     private int yPos;
     private BufferedImage bomb = ImageIO.read(new File("bomb.png"));
-    private Point[] turretPts = {new Point(153, 739), new Point(148, 734), new Point(152, 729), new Point(150, 721),
-    new Point(148, 716), new Point(148, 711), new Point(146, 704), new Point(144, 699), new Point(140, 696),
-    new Point(135, 692), new Point(133, 687), new Point(128, 683), new Point(123, 680)};
+    private Point[] turretPts = {new Point(163, 475), new Point(158, 465), new Point(162, 465), new Point(160, 451),
+    new Point(158, 447), new Point(158, 447), new Point(156, 436), new Point(154, 431), new Point(150, 428),
+    new Point(145, 424), new Point(143, 419), new Point(138, 415), new Point(133, 412)};
     public Tank(int xPos, int yPos) throws IOException {
         this.panel = new DrawingPanel(1000, 800);
         this.g = panel.getGraphics();
+        g2 = (Graphics2D)g;
         this.xPos = xPos;
         this.yPos = yPos;
         g.drawImage(ImageIO.read(new File("tanksprite1.png")), xPos, yPos, null);
         Color brown = new Color(139, 69, 19);
         g.setColor(brown);
         g.fillRect(0, 780, 1000, 20);
-        g.drawImage(ImageIO.read(new File("Powerbar\\Powerbar1.png")), 10, 70, null);
-        g.setColor(Color.BLUE);
-        g.setFont(new Font("Large", Font.BOLD, 50));
-        g.drawString("POWER:", 10, 55);
-        //animate();
+        g.drawImage(ImageIO.read(new File("Powerbar\\Powerbar1.png")), turretPts[0].x, turretPts[0].y, null);
+        fire(250, 40);
         panel.addMouseListener(new MouseInputAdapter() {
             public void mousePressed(MouseEvent e) {
-                /*try {
-                    animate();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-
+                fired = true;
                 Point p1 = new Point(xPos+144, yPos);
                 Point p2 = new Point(e.getX(), e.getY());
                 double vX = Math.abs(p1.x-p2.x);
                 double vY = Math.abs(p1.y-p2.y);
-                double deltaT = 0.01;
-                double x = xPos+144;
-                double y = yPos;
-                double oldX = x;
-                double oldY = y;
-                boolean done = false;
-                Rectangle ground = new Rectangle(0, 780, 1000, 20);
-                Rectangle ball = new Rectangle((int)xPos, (int)yPos, 32, 32);
-                while (!ball.intersects(ground)) {
-                    g.drawImage(bomb, (int)x, (int)y, null);
-                    ball = new Rectangle((int)xPos, (int)yPos, 32, 32);
-                    if (ball.intersects(ground)) {
-                        done = true;
-                    }
-                    vY += (G*deltaT);
-                    x += (vX*deltaT);
-                    y -= (vY*deltaT);
-                    panel.sleep(50);
-                    g.setColor(Color.white);
-                    g.fillRect((int)oldX, (int)oldY, 32, 32);
-                    oldX = x;
-                    oldY = y;
-                }*/
+                if (vX > 350) {
+                    vX = 350;
+                }
+                if (vY > 350) {
+                    vY = 350;
+                }
+
+                fire(vX, vY);
+                panel.sleep(3000);
+                fired = false;
             }
 
             public void mouseMoved(MouseEvent e) {
-                Point p1 = new Point(e.getX(), e.getY());
-                Point p2 = new Point((int)(xPos+144), (int)(yPos+20));
-                double xDist = (p1.x-p2.x);
-                double yDist = (p2.y-p1.y);
+                if (!fired) {
+                    Point p1 = new Point(e.getX(), e.getY());
+                    Point p2 = new Point(155, 670);
+                    double xDist = (p1.x - p2.x);
+                    double yDist = (p2.y - p1.y);
 
-                double theta = Math.toDegrees(Math.atan2(yDist, xDist));
-                theta = 5*(Math.round(theta/5));
+                    double theta = Math.toDegrees(Math.atan2(yDist, xDist));
+                    theta = 5 * (Math.round(theta / 5));
 
-                double turretAngle = theta;
-                if (turretAngle > 60) {
-                    turretAngle = 60;
-                } else if (turretAngle < 0) {
-                    turretAngle = 0;
-                }
+                    double turretAngle = theta;
+                    if (turretAngle > 60) {
+                        turretAngle = 60;
+                    } else if (turretAngle < 0) {
+                        turretAngle = 0;
+                    }
 
-                int imgIndex = ((int)turretAngle/5)+1;
-                g.setColor(Color.white);
-                g.fillRect(xPos, yPos, 170, 70);
-                try {
-                    g.drawImage(ImageIO.read(new File("TankSprite" + imgIndex + ".png")), xPos, yPos, null);
-                } catch (IOException ex) {
-                    System.out.println("TankSprite"+imgIndex);
-                }
+                    int imgIndex = ((int) turretAngle / 5) + 1;
+                    g.setColor(Color.white);
+                    g.fillRect(xPos, yPos, 170, 70);
+                    try {
+                        g.drawImage(ImageIO.read(new File("TankSprite" + imgIndex + ".png")), xPos, yPos, null);
+                    } catch (IOException ex) {
+                        System.out.println("TankSprite" + imgIndex);
+                    }
+                    Point turretPt = turretPts[imgIndex - 1];
+                    p1 = new Point(e.getX(), e.getY());
+                    double power = new Point(155, 670).distance(p1);
 
-                Point turretPt = turretPts[imgIndex-1];
-                double power = turretPt.distance(p1);
-                if (power > 350) {
-                    power = 350;
-                }
-                int pwrIndex = ((int)power/10)+1;
-                g.fillRect(10, 70, 350, 30);
-                try {
-                    g.drawImage(ImageIO.read(new File("Powerbar\\Powerbar" + pwrIndex + ".png")), 10, 70, null);
-                } catch (IOException ex) {
-                    System.out.println("Powerbar" + pwrIndex);
+                    if (power > 350) {
+                        power = 350;
+                    }
+                    power = 25 * Math.round(power / 25);
+                    int pwrIndex = ((int) power / 25) + 1;
+                    g2.fillRect(turretPts[prevTurretPt].x - 10, turretPts[prevTurretPt].y - 55, 370, 340);
+
+                    try {
+                        BufferedImage bar = ImageIO.read(new File("Powerbar\\Powerbar" + pwrIndex + ".png"));
+                        double deg = Math.toRadians((10 - imgIndex) * (5));
+                        AffineTransform at = g2.getTransform();
+                        at.translate(turretPts[imgIndex - 1].x, turretPts[imgIndex - 1].y);
+                        at.rotate(deg, 0, 262);
+                        AffineTransformOp ato = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                        BufferedImage rotated = ato.createCompatibleDestImage(bar, bar.getColorModel());
+                        g2.drawImage(bar, at, null);
+                    } catch (IOException ex) {
+                        System.out.println("Powerbar" + pwrIndex);
+                    }
+                    prevTurretPt = (imgIndex - 1);
                 }
             }
         });
     }
 
-    private void fire(double vX, double vY) throws IOException {
-
-    }
-
-    public void animate() throws IOException {
-        forward();
-        backward();
-        forward();
-        backward();
-    }
-    private void forward() throws IOException {
-        for (int i = 1; i <= 12; i++) {
-            g.setColor(Color.white);
-            g.fillRect(xPos, yPos, 170, 70);
-            try {
-                g.drawImage(ImageIO.read(new File("TankSprite" + i + ".png")), xPos, yPos, null);
-            } catch (IIOException e) {
-                System.out.println("TankSprite"+i);
+    private void fire(double vX, double vY) {
+        System.out.println("Firing with x velocity " + vX + " and y velocity " + vY);
+        g.setColor(Color.white);
+        g.fillRect(133, 412, 300, 350);
+        double deltaT = 0.01;
+        double x = xPos+144;
+        double y = yPos;
+        double oldX = x;
+        double oldY = y;
+        Rectangle ground = new Rectangle(0, 780, 1000, 20);
+        Rectangle ball = new Rectangle((int)xPos, (int)yPos, 32, 32);
+        while (!ball.intersects(ground)) {
+            g.drawImage(bomb, (int)x, (int)y, null);
+            ball = new Rectangle((int)x, (int)y, 32, 32);
+            if (ball.intersects(ground)) {
+                break;
             }
-            panel.sleep(100);
-        }
-    }
-    private void backward() throws IOException {
-        for (int i = 12; i >= 1; i--) {
+            vY += (G*deltaT);
+            x += (vX*deltaT);
+            y -= (vY*deltaT);
+            panel.sleep(10);
             g.setColor(Color.white);
-            g.fillRect(xPos, yPos, 170, 70);
-            try {
-                g.drawImage(ImageIO.read(new File("TankSprite" + i + ".png")), xPos, yPos, null);
-            } catch (IIOException e) {
-                System.out.println("TankSprite"+i);
-            }
-            panel.sleep(100);
+            g.fillRect((int)oldX, (int)oldY, 32, 32);
+            oldX = x;
+            oldY = y;
         }
     }
 }
